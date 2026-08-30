@@ -1,1 +1,607 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Villa Labico - Gestionale</title>
 
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏡</text></svg>">
+
+<style>
+    :root {
+        --primary: #2c3e50; --secondary: #3498db; --accent: #27ae60;
+        --bg: #f4f7f6; --card-bg: #ffffff; --text: #333333; --muted: #7f8c8d;
+        --border-color: #ecf0f1; --input-bg: #ffffff;
+        --hero-bg-url: url('https://i.ibb.co/pjrqq5Qk/780749360.jpg?auto=format&fit=crop&w=1200&q=80');
+    }
+
+    [data-theme="dark"] {
+        --primary: #0f172a; --secondary: #38bdf8; --accent: #10b981;
+        --bg: #0f172a; --card-bg: #1e293b; --text: #f8fafc; --muted: #94a3b8;
+        --border-color: #334155; --input-bg: #0f172a;
+    }
+
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: var(--bg); color: var(--text); margin: 0; line-height: 1.6; transition: background-color 0.3s ease, color 0.3s ease; }
+    
+    #login-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; background-color: var(--primary); color: white; padding: 20px;}
+    .login-box { background: var(--card-bg); padding: 40px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); text-align: center; color: var(--text); width: 100%; max-width: 350px; }
+    .input-group { margin-bottom: 15px; text-align: left; }
+    .input-group label { display: block; font-size: 13px; font-weight: bold; margin-bottom: 5px; color: var(--muted); }
+    .input-group input { width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; box-sizing: border-box; background-color: var(--input-bg); color: var(--text); }
+    .btn-login { width: 100%; background: var(--secondary); color: white; border: none; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+    .btn-google { width: 100%; background: white; color: #757575; border: 1px solid #ddd; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .btn-google img { width: 18px; }
+    .divider { display: flex; align-items: center; text-align: center; margin: 15px 0; color: #aaa; font-size: 12px; }
+    .divider::before, .divider::after { content: ''; flex: 1; border-bottom: 1px solid var(--border-color); }
+    
+    #app-screen { display: none; }
+    .app-header { position: relative; overflow: hidden; background: linear-gradient(rgba(15, 23, 42, 0.85), rgba(15, 23, 42, 0.85)), var(--hero-bg-url); background-size: cover; background-position: center; color: white; padding: 20px 20px 28px; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 20px rgba(0,0,0,0.25); transition: padding 0.3s ease; }
+    .header-toggle-tab { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); background: rgba(15, 23, 42, 0.9); border: 1px solid rgba(255, 255, 255, 0.2); border-bottom: none; border-radius: 12px 12px 0 0; color: white; width: 48px; height: 18px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 10px; backdrop-filter: blur(5px); transition: background 0.2s, color 0.2s; z-index: 110; }
+    .header-toggle-tab:hover { background: var(--secondary); }
+    .header-toggle-tab span { display: inline-block; transition: transform 0.3s ease; }
+    .app-header.compact-header { padding: 10px 20px 18px; }
+    .app-header.compact-header .progress-section, .app-header.compact-header .budget-panel, .app-header.compact-header .analytics-panel, .app-header.compact-header #connection-status { display: none !important; }
+    .app-header.compact-header .header-toggle-tab span { transform: rotate(180deg); }
+    .header-top { display: flex; justify-content: space-between; max-width: 800px; margin: 0 auto; align-items: center; }
+    .header-title-area h1 { margin: 0; font-size: 24px; letter-spacing: -0.5px; }
+    .header-title-area p { margin: 2px 0 0; font-size: 12px; opacity: 0.8; }
+    .header-controls { display: flex; gap: 8px; align-items: center; }
+    .btn-theme { background: rgba(255,255,255,0.2); border: none; color: white; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 14px; backdrop-filter: blur(5px); }
+    .btn-logout { background: #e74c3c; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; }
+    
+    .progress-section { max-width: 800px; margin: 15px auto 0; }
+    .progress-info { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 5px; font-weight: 600; opacity: 0.9; }
+    .progress-container { height: 10px; background: rgba(255,255,255,0.2); border-radius: 20px; overflow: hidden; backdrop-filter: blur(5px); }
+    .progress-bar { height: 100%; background: linear-gradient(90deg, #2ecc71, #27ae60); width: 0%; transition: width 0.4s ease; }
+
+    .budget-panel { max-width: 800px; margin: 15px auto 0; display: flex; gap: 10px; justify-content: space-between; text-align: center; flex-wrap: wrap;}
+    .budget-box { background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); padding: 10px; border-radius: 8px; flex: 1; min-width: 100px; position: relative; border: 1px solid rgba(255,255,255,0.15);}
+    .budget-box span { display: block; font-size: 11px; text-transform: uppercase; opacity: 0.8; margin-bottom: 3px;}
+    .budget-box strong { font-size: 16px; }
+    .budget-box.clickable { cursor: pointer; transition: background 0.2s; }
+    .budget-box.clickable:hover { background: rgba(255,255,255,0.2); }
+    .budget-input { width: 90%; background: transparent; border: 1px dashed rgba(255,255,255,0.5); color: white; font-size: 16px; font-weight: bold; text-align: center; border-radius: 4px; padding: 2px;}
+    .budget-input:focus { outline: none; border: 1px solid white; background: rgba(255,255,255,0.2);}
+    .box-totale strong { color: #f39c12; }
+    .box-speso strong { color: #ff6b6b; }
+    .box-rimanente strong { color: #2ecc71; }
+
+    .analytics-panel { max-width: 800px; margin: 10px auto 0; background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.2); border-radius: 10px; padding: 15px; display: none; animation: fadeIn 0.3s ease-in-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+    .filter-section { display: flex; justify-content: center; gap: 15px; padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.15); flex-wrap: wrap; }
+    .filter-checkbox { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; cursor: pointer; background: rgba(255,255,255,0.1); padding: 4px 10px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); }
+    .filter-checkbox input { cursor: pointer; }
+    .analytics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; font-size: 12px; text-align: center; }
+    .analytics-item { background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); }
+    .analytics-item span { display: block; font-size: 10px; opacity: 0.8; text-transform: uppercase; margin-bottom: 2px;}
+    .analytics-item strong { font-size: 15px; display: block; }
+    
+    .text-danger { color: #ff6b6b !important; }
+    .text-success { color: #2ecc71 !important; }
+    .text-warning { color: #f1c40f !important; }
+    .text-info { color: #38bdf8 !important; }
+
+    .container { max-width: 800px; margin: 20px auto; padding: 0 15px; padding-bottom: 80px;}
+    
+    .global-controls { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;}
+    .btn-control { flex: 1; background: var(--card-bg); color: var(--text); border: 1px solid var(--border-color); padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 13px; transition: 0.2s;}
+    .btn-control:hover { background: var(--bg); }
+    .btn-add-phase-top { flex: 2; background: var(--accent); color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 14px;}
+    .collapsed-content { display: none !important; }
+    
+    .phase-card { background-color: var(--card-bg); border-radius: 12px; padding: 20px; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-left: 5px solid var(--secondary); transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease; }
+    .phase-card:hover { transform: translateY(-3px); box-shadow: 0 12px 25px rgba(0,0,0,0.12); }
+    .phase-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 15px; gap: 10px; flex-wrap: wrap; cursor: pointer; user-select: none;}
+    .phase-header:hover { opacity: 0.8; }
+    .phase-toggle { font-size: 14px; color: var(--primary); width: 20px; text-align: center; }
+    .phase-title-group { display: flex; align-items: center; gap: 10px; flex-grow: 1; flex-wrap: wrap; }
+    .phase-title { margin: 0; color: var(--text); font-size: 20px; }
+    .phase-total-badge { background: rgba(52, 152, 219, 0.15); color: var(--secondary); padding: 3px 10px; border-radius: 20px; font-size: 13px; font-weight: 700; white-space: nowrap; }
+    .phase-actions button { background: none; border: none; cursor: pointer; font-size: 16px; padding: 5px; color: var(--muted);}
+    
+    .task { display: flex; align-items: flex-start; padding: 12px 0; border-bottom: 1px dashed var(--border-color); transition: opacity 0.3s ease; }
+    .task.completed .task-text { text-decoration: line-through; color: var(--muted); }
+    .task-checkbox { margin-top: 4px; margin-right: 15px; transform: scale(1.5); cursor: pointer; }
+    .task-content { flex-grow: 1; }
+    .task-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;}
+    .task-title { font-weight: 500; font-size: 16px; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .task-price { font-weight: bold; color: var(--accent); background: rgba(39, 174, 96, 0.15); padding: 2px 8px; border-radius: 12px; font-size: 13px; white-space: nowrap;}
+    .task-actions { display: flex; gap: 5px; }
+    .task-actions button { background: var(--bg); border: 1px solid var(--border-color); color: var(--text); border-radius: 4px; cursor: pointer; font-size: 12px; padding: 4px 8px;}
+    
+    .badge { padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 700; text-transform: uppercase; white-space: nowrap; }
+    .badge-status.todo { background: #e2e8f0; color: #475569; }
+    .badge-status.doing { background: #bae6fd; color: #0369a1; }
+    .badge-status.waiting { background: #fef08a; color: #854d0e; }
+    .badge-status.done { background: #dcfce7; color: #15803d; }
+    .badge-priority.alta { background: #fee2e2; color: #b91c1c; }
+    .badge-priority.media { background: #ffedd5; color: #c2410c; }
+    .badge-priority.bassa { background: #f1f5f9; color: #64748b; }
+    .badge-bonus { background: #e0e7ff; color: #3730a3; }
+
+    .btn-link { display: inline-flex; align-items: center; background-color: var(--secondary); color: white; text-decoration: none; padding: 4px 8px; border-radius: 4px; font-size: 12px; margin-top: 6px; }
+    
+    details { background-color: var(--bg); padding: 10px 15px; border-radius: 8px; margin-top: 10px; border: 1px solid var(--border-color); }
+    summary { font-weight: 600; color: var(--secondary); cursor: pointer; font-size: 13px; outline: none;}
+    .guide-text { font-size: 13px; margin-top: 8px; color: var(--text); white-space: pre-wrap; font-family: inherit;}
+
+    .btn-add-task { width: 100%; background: var(--bg); border: 2px dashed var(--border-color); color: var(--muted); padding: 10px; border-radius: 8px; cursor: pointer; margin-top: 10px; font-weight: bold; transition: 0.2s;}
+    .btn-add-task:hover { background: var(--card-bg); color: var(--text); border-color: var(--secondary);}
+    
+    .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center; padding: 15px; box-sizing: border-box;}
+    .modal-content { background: var(--card-bg); padding: 25px; border-radius: 12px; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; color: var(--text); }
+    .modal-content h3 { margin-top: 0; color: var(--text); }
+    .form-group { margin-bottom: 15px; }
+    .form-group label { display: block; font-size: 13px; font-weight: bold; margin-bottom: 5px; color: var(--muted); }
+    .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; box-sizing: border-box; font-family: inherit; background-color: var(--input-bg); color: var(--text); }
+    .form-group textarea { resize: vertical; min-height: 100px; }
+    .checkbox-inline { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--text); }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+    .btn-cancel { background: var(--bg); border: 1px solid var(--border-color); padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; color: var(--muted);}
+    .btn-save { background: var(--secondary); border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; color: white;}
+</style>
+</head>
+<body>
+
+<div id="login-screen">
+    <div class="login-box">
+        <h2>🔒 Accesso Riservato</h2>
+        <button class="btn-google" id="btn-google">
+            <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" style="width: 20px;"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"></path><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"></path><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"></path><path fill="none" d="M0 0h48v48H0z"></path></svg>
+            Accedi con Google
+        </button>
+        <div class="divider">OPPURE</div>
+        <div class="input-group"><label>Email</label><input type="email" id="email"></div>
+        <div class="input-group"><label>Password</label><input type="password" id="password"></div>
+        <button class="btn-login" id="btn-login">Accedi con Email</button>
+        <div id="auth-error" style="color: #e74c3c; margin-top: 10px; font-size: 13px;"></div>
+    </div>
+</div>
+
+<div id="app-screen">
+    <div class="app-header" id="app-header">
+        <div class="header-top">
+            <div class="header-title-area">
+                <h1>🏡 Villa Labico</h1>
+                <p>Roadmap della ristrutturazione</p>
+            </div>
+            <div class="header-controls">
+                <button class="btn-theme" id="btn-theme" onclick="window.toggleTheme()" title="Cambia Tema">🌙</button>
+                <button class="btn-logout" id="btn-logout">Esci</button>
+            </div>
+        </div>
+        
+        <div class="progress-section">
+            <div class="progress-info">
+                <span>Avanzamento Lavori</span>
+                <span id="progress-text">0% (0/0)</span>
+            </div>
+            <div class="progress-container">
+                <div class="progress-bar" id="progress-bar"></div>
+            </div>
+        </div>
+
+        <div class="budget-panel">
+            <div class="budget-box">
+                <span>Budget Totale</span>
+                <input type="number" id="master-budget" class="budget-input" value="0" onblur="window.saveBudget(this.value)">
+            </div>
+            <div class="budget-box box-totale clickable" onclick="window.toggleAnalytics()" title="Clicca per aprire i filtri di simulazione">
+                <span>Filtra Preventivo ▾</span>
+                <strong id="b-totale-lavori">0 €</strong>
+            </div>
+            <div class="budget-box box-speso"><span>Soldi Spesi</span><strong id="b-speso">0 €</strong></div>
+            <div class="budget-box box-rimanente"><span>Residuo Budget</span><strong id="b-rimanente">0 €</strong></div>
+        </div>
+
+        <div class="analytics-panel" id="analytics-panel">
+            <div class="filter-section">
+                <label class="filter-checkbox"><input type="checkbox" id="filter-alta" checked onchange="window.renderApp()"> 🔴 Alta Priorità</label>
+                <label class="filter-checkbox"><input type="checkbox" id="filter-media" checked onchange="window.renderApp()"> 🟡 Media Priorità</label>
+                <label class="filter-checkbox"><input type="checkbox" id="filter-bassa" checked onchange="window.renderApp()"> 🟢 Bassa Priorità</label>
+            </div>
+            <div class="analytics-grid">
+                <div class="analytics-item"><span>Totale Lavori Selezionati</span><strong id="subtotal-selected" class="text-info">0 €</strong></div>
+                <div class="analytics-item"><span id="label-diff">Residuo / Prestito</span><strong id="diff-selected">0 €</strong></div>
+                <div class="analytics-item"><span>🏛️ Base Bonus (Max 96k)</span><strong id="bonus-base">0 €</strong></div>
+                <div class="analytics-item"><span>💸 Recupero IRPEF 50%</span><strong id="bonus-recovery" class="text-success">0 €</strong></div>
+            </div>
+        </div>
+
+        <div id="connection-status" style="font-size: 11px; text-align: center; margin-top: 10px; color: #f1c40f;">Attesa connessione...</div>
+        <div class="header-toggle-tab" onclick="window.toggleCompactHeader()" title="Riduci / Espandi Pannello"><span>▲</span></div>
+    </div>
+
+    <div class="container">
+        <div class="global-controls">
+            <button class="btn-control" onclick="window.expandAll()">▼ Espandi Tutte</button>
+            <button class="btn-control" onclick="window.collapseAll()">▶ Comprimi Tutte</button>
+            <button class="btn-add-phase-top" onclick="window.addPhase()">+ Nuova Fase</button>
+        </div>
+        <div id="phases-container"></div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="task-modal">
+    <div class="modal-content">
+        <h3 id="modal-title">Gestisci Lavoro</h3>
+        <input type="hidden" id="task-id">
+        <input type="hidden" id="task-phase-id">
+        
+        <div class="form-group">
+            <label>Titolo del Lavoro *</label>
+            <input type="text" id="task-title-input" placeholder="Es. Acquisto Router">
+        </div>
+        <div class="form-group">
+            <label>Prezzo (€) *</label>
+            <input type="number" id="task-price-input" placeholder="0.00" step="0.01">
+        </div>
+        <div class="form-group">
+            <label>Stato del Lavoro</label>
+            <select id="task-status-input">
+                <option value="todo">📌 Da Iniziare</option>
+                <option value="doing">⏳ In Corso</option>
+                <option value="waiting">🟡 In Attesa</option>
+                <option value="done">✅ Completato</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Priorità</label>
+            <select id="task-priority-input">
+                <option value="bassa">🟢 Bassa</option>
+                <option value="media" selected>🟡 Media</option>
+                <option value="alta">🔴 Alta</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label class="checkbox-inline">
+                <input type="checkbox" id="task-bonus-input">
+                🏛️ Includi nel Bonus Ristrutturazione 50%
+            </label>
+        </div>
+        <div class="form-group">
+            <label>Link d'acquisto (Opzionale)</label>
+            <input type="url" id="task-link-input" placeholder="https://amazon.it/...">
+        </div>
+        <div class="form-group">
+            <label>Procedura / Istruzioni (Opzionale)</label>
+            <textarea id="task-procedure-input" placeholder="Scrivi qui i dettagli del lavoro..."></textarea>
+        </div>
+        
+        <div class="modal-actions">
+            <button class="btn-cancel" onclick="window.closeModal()">Annulla</button>
+            <button class="btn-save" onclick="window.saveTask()">Salva Lavoro</button>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+    import { getDatabase, ref, set, onValue, off, push, remove } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyA4wgfzH9y_YytxP8PtLELJI_K4AYQu_Sk",
+        authDomain: "villa-labico-app.firebaseapp.com",
+        databaseURL: "https://villa-labico-app-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId: "villa-labico-app",
+        storageBucket: "villa-labico-app.firebasestorage.app",
+        messagingSenderId: "683887106147",
+        appId: "1:683887106147:web:540bce8df8c2eb88858056",
+        measurementId: "G-MB5X2JCT43"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
+    const googleProvider = new GoogleAuthProvider();
+    
+    // Manteniamo lo stesso nodo così non perdi nessun dato appena inserito
+    const DB_ROOT = 'villa_labico_gestionale_v4'; 
+
+    let globalData = { budget: 106000, phases: {}, tasks: {} };
+    let dbRef = null;
+    let collapsedPhases = new Set(); 
+
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    document.body.setAttribute('data-theme', savedTheme);
+    document.getElementById('btn-theme').textContent = savedTheme === 'dark' ? '☀️' : '🌙';
+
+    window.toggleTheme = () => {
+        const current = document.body.getAttribute('data-theme');
+        const next = current === 'dark' ? 'light' : 'dark';
+        document.body.setAttribute('data-theme', next);
+        localStorage.setItem('theme', next);
+        document.getElementById('btn-theme').textContent = next === 'dark' ? '☀️' : '🌙';
+    };
+
+    window.toggleCompactHeader = () => { document.getElementById('app-header').classList.toggle('compact-header'); };
+    window.toggleAnalytics = () => {
+        const panel = document.getElementById('analytics-panel');
+        panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
+    };
+
+    document.getElementById('btn-google').addEventListener('click', () => { signInWithPopup(auth, googleProvider).catch(err => document.getElementById('auth-error').textContent = err.message); });
+    document.getElementById('btn-login').addEventListener('click', () => { signInWithEmailAndPassword(auth, document.getElementById('email').value, document.getElementById('password').value).catch(err => document.getElementById('auth-error').textContent = "Credenziali errate"); });
+    document.getElementById('btn-logout').addEventListener('click', () => signOut(auth));
+
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('app-screen').style.display = 'block';
+            startDatabaseSync();
+        } else {
+            document.getElementById('login-screen').style.display = 'flex';
+            document.getElementById('app-screen').style.display = 'none';
+            if(dbRef) off(dbRef);
+        }
+    });
+
+    function startDatabaseSync() {
+        document.getElementById('connection-status').innerHTML = "🟢 Connesso al Cloud";
+        document.getElementById('connection-status').style.color = "#2ecc71";
+        
+        dbRef = ref(db, DB_ROOT);
+        onValue(dbRef, (snapshot) => {
+            globalData = snapshot.val() || { budget: 106000, phases: {}, tasks: {} };
+            if(!globalData.phases) globalData.phases = {};
+            if(!globalData.tasks) globalData.tasks = {};
+            
+            const budgetInput = document.getElementById('master-budget');
+            if (document.activeElement !== budgetInput) {
+                budgetInput.value = globalData.budget || 106000;
+            }
+            
+            window.renderApp();
+        }, (error) => {
+            document.getElementById('connection-status').innerHTML = "🔴 Accesso Negato";
+        });
+    }
+
+    window.renderApp = function() {
+        const container = document.getElementById('phases-container');
+        container.innerHTML = '';
+        
+        const showAlta = document.getElementById('filter-alta').checked;
+        const showMedia = document.getElementById('filter-media').checked;
+        const showBassa = document.getElementById('filter-bassa').checked;
+
+        let totaleSpesoGlobale = 0;
+        let totaleComplessivoTutto = 0;
+        let totaleLavoriSelezionati = 0;
+        let spesaBonusSelezionata = 0;
+        
+        const tasksList = Object.values(globalData.tasks);
+        const totalTasks = tasksList.length;
+        const completedTasks = tasksList.filter(t => t.checked || t.status === 'done').length;
+        const progressPercentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+        document.getElementById('progress-bar').style.width = `${progressPercentage}%`;
+        document.getElementById('progress-text').innerText = `${progressPercentage}% (${completedTasks}/${totalTasks})`;
+
+        const sortedPhases = Object.entries(globalData.phases).sort((a,b) => a[1].order - b[1].order);
+
+        sortedPhases.forEach(([phaseId, phaseData]) => {
+            const isCollapsed = collapsedPhases.has(phaseId);
+            const toggleIcon = isCollapsed ? '▶' : '▼';
+
+            const phaseDiv = document.createElement('div');
+            phaseDiv.className = 'phase-card';
+            let phaseTotalCost = 0;
+            
+            Object.entries(globalData.tasks).forEach(([taskId, task]) => {
+                if (task.phaseId === phaseId) {
+                    phaseTotalCost += (parseFloat(task.price) || 0);
+                }
+            });
+
+            const phaseTotalBadgeHtml = phaseTotalCost > 0 
+                ? `<span class="phase-total-badge">${phaseTotalCost.toLocaleString('it-IT', {style:'currency', currency:'EUR'})}</span>` 
+                : '';
+
+            let html = `
+                <div class="phase-header" onclick="window.togglePhaseCollapse('${phaseId}')">
+                    <div class="phase-title-group">
+                        <span class="phase-toggle">${toggleIcon}</span>
+                        <h2 class="phase-title">${phaseData.title}</h2>
+                        ${phaseTotalBadgeHtml}
+                    </div>
+                    <div class="phase-actions" onclick="event.stopPropagation()">
+                        <button onclick="window.renamePhase('${phaseId}', '${phaseData.title.replace(/'/g, "\\'")}')">✏️</button>
+                        <button onclick="window.deletePhase('${phaseId}')">🗑️</button>
+                    </div>
+                </div>
+                <div class="tasks-list ${isCollapsed ? 'collapsed-content' : ''}">
+            `;
+
+            Object.entries(globalData.tasks).forEach(([taskId, task]) => {
+                if (task.phaseId === phaseId) {
+                    const taskPrice = parseFloat(task.price) || 0;
+                    totaleComplessivoTutto += taskPrice;
+
+                    const isDone = task.checked || task.status === 'done';
+                    if(isDone) totaleSpesoGlobale += taskPrice;
+
+                    const prio = task.priority || 'media';
+                    const isVisible = (prio === 'alta' && showAlta) || 
+                                      (prio === 'media' && showMedia) || 
+                                      (prio === 'bassa' && showBassa);
+
+                    if (isVisible) {
+                        totaleLavoriSelezionati += taskPrice;
+                        if (task.isBonus) spesaBonusSelezionata += taskPrice;
+
+                        const priceHtml = task.price > 0 ? `<span class="task-price">${taskPrice.toLocaleString('it-IT', {style:'currency', currency:'EUR'})}</span>` : '';
+                        const linkHtml = task.link ? `<a href="${task.link}" target="_blank" class="btn-link">🔗 Apri Link</a>` : '';
+                        const procHtml = task.procedure ? `<details><summary>📖 Procedura / Note</summary><div class="guide-text">${task.procedure}</div></details>` : '';
+                        
+                        const statusVal = isDone ? 'done' : (task.status || 'todo');
+                        let statusLabel = 'Da Iniziare';
+                        if(statusVal === 'doing') statusLabel = 'In Corso';
+                        else if(statusVal === 'waiting') statusLabel = 'In Attesa';
+                        else if(statusVal === 'done') statusLabel = 'Completato';
+                        
+                        const statusBadge = `<span class="badge badge-status ${statusVal}">${statusLabel}</span>`;
+                        const priorityBadge = `<span class="badge badge-priority ${prio}">${prio}</span>`;
+                        const bonusBadge = task.isBonus ? `<span class="badge badge-bonus">🏛️ Bonus 50%</span>` : '';
+
+                        html += `
+                            <div class="task ${isDone ? 'completed' : ''}">
+                                <input type="checkbox" class="task-checkbox" ${isDone ? 'checked' : ''} onchange="window.toggleTask('${taskId}', this.checked)">
+                                <div class="task-content">
+                                    <div class="task-top">
+                                        <div class="task-title task-text">
+                                            ${task.title} 
+                                            ${priceHtml}
+                                            ${statusBadge}
+                                            ${priorityBadge}
+                                            ${bonusBadge}
+                                        </div>
+                                        <div class="task-actions">
+                                            <button onclick="window.editTask('${taskId}')">✏️</button>
+                                            <button onclick="window.deleteTask('${taskId}')">🗑️</button>
+                                        </div>
+                                    </div>
+                                    ${linkHtml}
+                                    ${procHtml}
+                                </div>
+                            </div>
+                        `;
+                    }
+                }
+            });
+
+            html += `</div><button class="btn-add-task ${isCollapsed ? 'collapsed-content' : ''}" onclick="window.addTask('${phaseId}')">+ Aggiungi Lavoro</button>`;
+            phaseDiv.innerHTML = html;
+            container.appendChild(phaseDiv);
+        });
+
+        const budgetIniziale = parseFloat(globalData.budget) || 0;
+        const diffSimulazione = budgetIniziale - totaleLavoriSelezionati;
+
+        document.getElementById('b-totale-lavori').innerText = totaleLavoriSelezionati.toLocaleString('it-IT', { style: 'currency', currency: 'EUR' });
+        document.getElementById('b-speso').innerText = totaleSpesoGlobale.toLocaleString('it-IT', { style: 'currency', currency: 'EUR' });
+        document.getElementById('b-rimanente').innerText = (budgetIniziale - totaleSpesoGlobale).toLocaleString('it-IT', { style: 'currency', currency: 'EUR' });
+
+        document.getElementById('subtotal-selected').innerText = totaleLavoriSelezionati.toLocaleString('it-IT', { style: 'currency', currency: 'EUR' });
+        
+        const diffElement = document.getElementById('diff-selected');
+        const labelDiffElement = document.getElementById('label-diff');
+        
+        if (diffSimulazione >= 0) {
+            labelDiffElement.innerText = "Residuo Selezione";
+            diffElement.innerText = diffSimulazione.toLocaleString('it-IT', { style: 'currency', currency: 'EUR' });
+            diffElement.className = "text-success";
+        } else {
+            labelDiffElement.innerText = "📉 Prestito Necessario";
+            diffElement.innerText = Math.abs(diffSimulazione).toLocaleString('it-IT', { style: 'currency', currency: 'EUR' });
+            diffElement.className = "text-danger";
+        }
+
+        const baseBonusValida = Math.min(96000, spesaBonusSelezionata);
+        const recuperoIRPEF = baseBonusValida * 0.5;
+
+        document.getElementById('bonus-base').innerText = spesaBonusSelezionata.toLocaleString('it-IT', { style: 'currency', currency: 'EUR' });
+        if(spesaBonusSelezionata > 96000) {
+            document.getElementById('bonus-base').innerText += " (Cap a 96k €)";
+        }
+        document.getElementById('bonus-recovery').innerText = recuperoIRPEF.toLocaleString('it-IT', { style: 'currency', currency: 'EUR' });
+    }
+
+    // ACCORDION LOGIC
+    window.togglePhaseCollapse = (id) => {
+        if (collapsedPhases.has(id)) {
+            collapsedPhases.delete(id);
+        } else {
+            collapsedPhases.add(id);
+        }
+        window.renderApp();
+    };
+    window.expandAll = () => { collapsedPhases.clear(); window.renderApp(); };
+    window.collapseAll = () => { Object.keys(globalData.phases).forEach(pid => collapsedPhases.add(pid)); window.renderApp(); };
+
+    // GLOBALS
+    window.saveBudget = (val) => { set(ref(db, `${DB_ROOT}/budget`), parseFloat(val) || 0); };
+    window.addPhase = () => {
+        const title = prompt("Inserisci il nome della nuova Fase:");
+        if (title) push(ref(db, `${DB_ROOT}/phases`), { title, order: Object.keys(globalData.phases).length });
+    };
+    window.renamePhase = (id, oldTitle) => {
+        const title = prompt("Rinomina la Fase:", oldTitle);
+        if (title && title !== oldTitle) set(ref(db, `${DB_ROOT}/phases/${id}/title`), title);
+    };
+    window.deletePhase = (id) => {
+        if (confirm("ATTENZIONE: Eliminando la fase cancellerai anche tutti i lavori al suo interno. Procedere?")) {
+            remove(ref(db, `${DB_ROOT}/phases/${id}`));
+            Object.entries(globalData.tasks).forEach(([taskId, task]) => {
+                if (task.phaseId === id) remove(ref(db, `${DB_ROOT}/tasks/${taskId}`));
+            });
+        }
+    };
+    window.toggleTask = (id, isChecked) => { 
+        const task = globalData.tasks[id];
+        if(!task) return;
+        const newStatus = isChecked ? 'done' : 'todo';
+        set(ref(db, `${DB_ROOT}/tasks/${id}/checked`), isChecked); 
+        set(ref(db, `${DB_ROOT}/tasks/${id}/status`), newStatus); 
+    };
+    window.deleteTask = (id) => {
+        if (confirm("Vuoi davvero eliminare questo lavoro?")) remove(ref(db, `${DB_ROOT}/tasks/${id}`));
+    };
+
+    // MODAL
+    const modal = document.getElementById('task-modal');
+    window.addTask = (phaseId) => {
+        document.getElementById('modal-title').innerText = "Nuovo Lavoro";
+        document.getElementById('task-id').value = "";
+        document.getElementById('task-phase-id').value = phaseId;
+        document.getElementById('task-title-input').value = "";
+        document.getElementById('task-price-input').value = "";
+        document.getElementById('task-status-input').value = "todo";
+        document.getElementById('task-priority-input').value = "media";
+        document.getElementById('task-bonus-input').checked = false;
+        document.getElementById('task-link-input').value = "";
+        document.getElementById('task-procedure-input').value = "";
+        modal.style.display = 'flex';
+    };
+    window.editTask = (taskId) => {
+        const task = globalData.tasks[taskId];
+        if(!task) return;
+        document.getElementById('modal-title').innerText = "Modifica Lavoro";
+        document.getElementById('task-id').value = taskId;
+        document.getElementById('task-phase-id').value = task.phaseId;
+        document.getElementById('task-title-input').value = task.title;
+        document.getElementById('task-price-input').value = task.price || "";
+        document.getElementById('task-status-input').value = task.status || (task.checked ? 'done' : 'todo');
+        document.getElementById('task-priority-input').value = task.priority || "media";
+        document.getElementById('task-bonus-input').checked = task.isBonus || false;
+        document.getElementById('task-link-input').value = task.link || "";
+        document.getElementById('task-procedure-input').value = task.procedure || "";
+        modal.style.display = 'flex';
+    };
+    window.closeModal = () => { modal.style.display = 'none'; };
+    window.saveTask = () => {
+        const id = document.getElementById('task-id').value;
+        const phaseId = document.getElementById('task-phase-id').value;
+        const title = document.getElementById('task-title-input').value.trim();
+        const price = parseFloat(document.getElementById('task-price-input').value) || 0;
+        const status = document.getElementById('task-status-input').value;
+        const priority = document.getElementById('task-priority-input').value;
+        const isBonus = document.getElementById('task-bonus-input').checked;
+        const link = document.getElementById('task-link-input').value.trim();
+        const procedure = document.getElementById('task-procedure-input').value.trim();
+
+        if (!title) return alert("Inserisci un titolo per il lavoro!");
+        const taskData = { phaseId, title, price, status, priority, isBonus, link, procedure };
+        taskData.checked = (status === 'done');
+
+        if (id) {
+            set(ref(db, `${DB_ROOT}/tasks/${id}`), taskData);
+        } else {
+            push(ref(db, `${DB_ROOT}/tasks`), taskData);
+        }
+        window.closeModal();
+    };
+</script>
+</body>
+</html>
