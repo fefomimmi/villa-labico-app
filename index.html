@@ -446,11 +446,11 @@
                 const procHtml = task.procedure ? `<details><summary>📖 Procedura / Note</summary><div class="guide-text">${task.procedure.replace(/\n/g, '<br>')}</div></details>` : '';
                 
                 const statusVal = isDone ? 'done' : (task.status || 'todo');
-                let statusLabel = 'Da Iniziare';
-                if(statusVal === 'to_buy') statusLabel = 'Da Acquistare';
-                else if(statusVal === 'doing') statusLabel = 'In Corso';
-                else if(statusVal === 'waiting') statusLabel = 'In Attesa';
-                else if(statusVal === 'done') statusLabel = 'Completato';
+                let statusLabel = '📌 Da Iniziare';
+                if(statusVal === 'to_buy') statusLabel = '🛒 Da Acquistare';
+                else if(statusVal === 'doing') statusLabel = '⏳ In Corso';
+                else if(statusVal === 'waiting') statusLabel = '🟡 In Attesa';
+                else if(statusVal === 'done') statusLabel = '✅ Completato';
                 
                 const statusBadge = `<span class="badge badge-status ${statusVal}">${statusLabel}</span>`;
                 const bonusBadge = task.isBonus ? `<span class="badge badge-bonus">🏛️ Bonus 50%</span>` : '';
