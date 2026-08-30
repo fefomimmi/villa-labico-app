@@ -290,7 +290,7 @@
     let globalData = { budget: 106000, phases: {}, tasks: {} };
     let dbRef = null;
     let collapsedPhases = new Set(); 
-    let hiddenPhasesFilter = new Set(); // Nuovo stato per le fasi nascoste nel simulatore
+    let hiddenPhasesFilter = new Set(); 
 
     const savedTheme = localStorage.getItem('theme') || 'light';
     document.body.setAttribute('data-theme', savedTheme);
@@ -369,7 +369,6 @@
         const sortedPhases = Object.entries(globalData.phases).sort((a,b) => a[1].order - b[1].order);
 
         sortedPhases.forEach(([phaseId, phaseData]) => {
-            // Costruzione Filtri Dinamici per Fase
             const isPhaseHidden = hiddenPhasesFilter.has(phaseId);
             const label = document.createElement('label');
             label.className = 'filter-checkbox';
@@ -381,7 +380,6 @@
             });
             filterContainer.appendChild(label);
 
-            // Calcolo Costi Base per il badge
             let phaseTotalCost = 0;
             Object.entries(globalData.tasks).forEach(([taskId, task]) => {
                 if (task.phaseId === phaseId) {
@@ -390,7 +388,6 @@
                 }
             });
 
-            // Se la fase è stata "spenta" dal filtro, passiamo alla prossima (scompare e non si somma)
             if (isPhaseHidden) return;
 
             const isCollapsed = collapsedPhases.has(phaseId);
@@ -427,7 +424,8 @@
                     const isDone = task.checked || task.status === 'done';
                     const priceHtml = task.price > 0 ? `<span class="task-price">${taskPrice.toLocaleString('it-IT', {style:'currency', currency:'EUR'})}</span>` : '';
                     const linkHtml = task.link ? `<a href="${task.link}" target="_blank" class="btn-link">🔗 Apri Link</a>` : '';
-                    const procHtml = task.procedure ? `<details><summary>📖 Procedura / Note</summary><div class="guide-text">${task.procedure}</div></details>` : '';
+                    
+                    const procHtml = task.procedure ? `<details><summary>📖 Procedura / Note</summary><div class="guide-text">${task.procedure.replace(/\n/g, '<br>')}</div></details>` : '';
                     
                     const statusVal = isDone ? 'done' : (task.status || 'todo');
                     let statusLabel = 'Da Iniziare';
