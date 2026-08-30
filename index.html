@@ -6,6 +6,7 @@
 <title>Villa Labico - Gestionale</title>
 
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏡</text></svg>">
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
 
 <style>
     :root {
@@ -92,8 +93,18 @@
     .btn-add-phase-top { flex: 2; background: var(--accent); color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 14px;}
     .collapsed-content { display: none !important; }
     
-    .phase-card { background-color: var(--card-bg); border-radius: 12px; padding: 20px; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-left: 5px solid var(--secondary); transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease; }
-    .phase-card:hover { transform: translateY(-3px); box-shadow: 0 12px 25px rgba(0,0,0,0.12); }
+    /* Drag & Drop Handles */
+    .phase-drag-handle, .task-drag-handle {
+        cursor: grab;
+        color: var(--muted);
+        margin-right: 8px;
+        font-size: 18px;
+        user-select: none;
+        display: inline-block;
+    }
+    .phase-drag-handle:active, .task-drag-handle:active { cursor: grabbing; }
+
+    .phase-card { background-color: var(--card-bg); border-radius: 12px; padding: 20px; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-left: 5px solid var(--secondary); transition: box-shadow 0.3s ease, background-color 0.3s ease; }
     .phase-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 15px; gap: 10px; flex-wrap: wrap; cursor: pointer; user-select: none;}
     .phase-header:hover { opacity: 0.8; }
     .phase-toggle { font-size: 14px; color: var(--primary); width: 20px; text-align: center; }
@@ -102,7 +113,7 @@
     .phase-total-badge { background: rgba(52, 152, 219, 0.15); color: var(--secondary); padding: 3px 10px; border-radius: 20px; font-size: 13px; font-weight: 700; white-space: nowrap; }
     .phase-actions button { background: none; border: none; cursor: pointer; font-size: 16px; padding: 5px; color: var(--muted);}
     
-    .task { display: flex; align-items: flex-start; padding: 12px 0; border-bottom: 1px dashed var(--border-color); transition: opacity 0.3s ease; }
+    .task { display: flex; align-items: flex-start; padding: 12px 0; border-bottom: 1px dashed var(--border-color); transition: opacity 0.3s ease; background-color: var(--card-bg); }
     .task.completed .task-text { text-decoration: line-through; color: var(--muted); }
     .task-checkbox { margin-top: 4px; margin-right: 15px; transform: scale(1.5); cursor: pointer; }
     .task-content { flex-grow: 1; }
@@ -195,9 +206,7 @@
         </div>
 
         <div class="analytics-panel" id="analytics-panel">
-            <!-- Qui verranno iniettati i filtri dinamici per Fase -->
             <div class="filter-section" id="phase-filters"></div>
-            
             <div class="analytics-grid">
                 <div class="analytics-item"><span>Costo Fasi Selezionate</span><strong id="subtotal-selected" class="text-info">0 €</strong></div>
                 <div class="analytics-item"><span id="label-diff">Residuo / Prestito</span><strong id="diff-selected">0 €</strong></div>
@@ -268,7 +277,7 @@
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
     import { getAuth, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
-    import { getDatabase, ref, set, onValue, off, push, remove } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+    import { getDatabase, ref, set, onValue, off, push, remove, update } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyA4wgfzH9y_YytxP8PtLELJI_K4AYQu_Sk",
@@ -291,6 +300,7 @@
     let dbRef = null;
     let collapsedPhases = new Set(); 
     let hiddenPhasesFilter = new Set(); 
+    let isDragging = false; // Flag per evitare render durante il trascinamento
 
     const savedTheme = localStorage.getItem('theme') || 'light';
     document.body.setAttribute('data-theme', savedTheme);
@@ -332,6 +342,8 @@
         
         dbRef = ref(db, DB_ROOT);
         onValue(dbRef, (snapshot) => {
+            if (isDragging) return; // Non aggiornare il DOM se l'utente sta trascinando elementi
+            
             globalData = snapshot.val() || { budget: 106000, phases: {}, tasks: {} };
             if(!globalData.phases) globalData.phases = {};
             if(!globalData.tasks) globalData.tasks = {};
@@ -366,7 +378,7 @@
         document.getElementById('progress-bar').style.width = `${progressPercentage}%`;
         document.getElementById('progress-text').innerText = `${progressPercentage}% (${completedTasks}/${totalTasks})`;
 
-        const sortedPhases = Object.entries(globalData.phases).sort((a,b) => a[1].order - b[1].order);
+        const sortedPhases = Object.entries(globalData.phases).sort((a,b) => (a[1].order || 0) - (b[1].order || 0));
 
         sortedPhases.forEach(([phaseId, phaseData]) => {
             const isPhaseHidden = hiddenPhasesFilter.has(phaseId);
@@ -395,6 +407,7 @@
 
             const phaseDiv = document.createElement('div');
             phaseDiv.className = 'phase-card';
+            phaseDiv.setAttribute('data-id', phaseId);
 
             const phaseTotalBadgeHtml = phaseTotalCost > 0 
                 ? `<span class="phase-total-badge">${phaseTotalCost.toLocaleString('it-IT', {style:'currency', currency:'EUR'})}</span>` 
@@ -403,6 +416,7 @@
             let html = `
                 <div class="phase-header" onclick="window.togglePhaseCollapse('${phaseId}')">
                     <div class="phase-title-group">
+                        <span class="phase-drag-handle" onclick="event.stopPropagation()" title="Trascina Fase">☰</span>
                         <span class="phase-toggle">${toggleIcon}</span>
                         <h2 class="phase-title">${phaseData.title}</h2>
                         ${phaseTotalBadgeHtml}
@@ -415,49 +429,51 @@
                 <div class="tasks-list ${isCollapsed ? 'collapsed-content' : ''}">
             `;
 
-            Object.entries(globalData.tasks).forEach(([taskId, task]) => {
-                if (task.phaseId === phaseId) {
-                    const taskPrice = parseFloat(task.price) || 0;
-                    totaleLavoriSelezionati += taskPrice;
-                    if (task.isBonus) spesaBonusSelezionata += taskPrice;
+            const phaseTasks = Object.entries(globalData.tasks)
+                .filter(([_, t]) => t.phaseId === phaseId)
+                .sort((a, b) => (a[1].order || 0) - (b[1].order || 0));
 
-                    const isDone = task.checked || task.status === 'done';
-                    const priceHtml = task.price > 0 ? `<span class="task-price">${taskPrice.toLocaleString('it-IT', {style:'currency', currency:'EUR'})}</span>` : '';
-                    const linkHtml = task.link ? `<a href="${task.link}" target="_blank" class="btn-link">🔗 Apri Link</a>` : '';
-                    
-                    const procHtml = task.procedure ? `<details><summary>📖 Procedura / Note</summary><div class="guide-text">${task.procedure.replace(/\n/g, '<br>')}</div></details>` : '';
-                    
-                    const statusVal = isDone ? 'done' : (task.status || 'todo');
-                    let statusLabel = 'Da Iniziare';
-                    if(statusVal === 'doing') statusLabel = 'In Corso';
-                    else if(statusVal === 'waiting') statusLabel = 'In Attesa';
-                    else if(statusVal === 'done') statusLabel = 'Completato';
-                    
-                    const statusBadge = `<span class="badge badge-status ${statusVal}">${statusLabel}</span>`;
-                    const bonusBadge = task.isBonus ? `<span class="badge badge-bonus">🏛️ Bonus 50%</span>` : '';
+            phaseTasks.forEach(([taskId, task]) => {
+                const taskPrice = parseFloat(task.price) || 0;
+                totaleLavoriSelezionati += taskPrice;
+                if (task.isBonus) spesaBonusSelezionata += taskPrice;
 
-                    html += `
-                        <div class="task ${isDone ? 'completed' : ''}">
-                            <input type="checkbox" class="task-checkbox" ${isDone ? 'checked' : ''} onchange="window.toggleTask('${taskId}', this.checked)">
-                            <div class="task-content">
-                                <div class="task-top">
-                                    <div class="task-title task-text">
-                                        ${task.title} 
-                                        ${priceHtml}
-                                        ${statusBadge}
-                                        ${bonusBadge}
-                                    </div>
-                                    <div class="task-actions">
-                                        <button onclick="window.editTask('${taskId}')">✏️</button>
-                                        <button onclick="window.deleteTask('${taskId}')">🗑️</button>
-                                    </div>
+                const isDone = task.checked || task.status === 'done';
+                const priceHtml = task.price > 0 ? `<span class="task-price">${taskPrice.toLocaleString('it-IT', {style:'currency', currency:'EUR'})}</span>` : '';
+                const linkHtml = task.link ? `<a href="${task.link}" target="_blank" class="btn-link">🔗 Apri Link</a>` : '';
+                const procHtml = task.procedure ? `<details><summary>📖 Procedura / Note</summary><div class="guide-text">${task.procedure.replace(/\n/g, '<br>')}</div></details>` : '';
+                
+                const statusVal = isDone ? 'done' : (task.status || 'todo');
+                let statusLabel = 'Da Iniziare';
+                if(statusVal === 'doing') statusLabel = 'In Corso';
+                else if(statusVal === 'waiting') statusLabel = 'In Attesa';
+                else if(statusVal === 'done') statusLabel = 'Completato';
+                
+                const statusBadge = `<span class="badge badge-status ${statusVal}">${statusLabel}</span>`;
+                const bonusBadge = task.isBonus ? `<span class="badge badge-bonus">🏛️ Bonus 50%</span>` : '';
+
+                html += `
+                    <div class="task ${isDone ? 'completed' : ''}" data-id="${taskId}">
+                        <span class="task-drag-handle" title="Trascina Lavoro">☰</span>
+                        <input type="checkbox" class="task-checkbox" ${isDone ? 'checked' : ''} onchange="window.toggleTask('${taskId}', this.checked)">
+                        <div class="task-content">
+                            <div class="task-top">
+                                <div class="task-title task-text">
+                                    ${task.title} 
+                                    ${priceHtml}
+                                    ${statusBadge}
+                                    ${bonusBadge}
                                 </div>
-                                ${linkHtml}
-                                ${procHtml}
+                                <div class="task-actions">
+                                    <button onclick="window.editTask('${taskId}')">✏️</button>
+                                    <button onclick="window.deleteTask('${taskId}')">🗑️</button>
+                                </div>
                             </div>
+                            ${linkHtml}
+                            ${procHtml}
                         </div>
-                    `;
-                }
+                    </div>
+                `;
             });
 
             html += `</div><button class="btn-add-task ${isCollapsed ? 'collapsed-content' : ''}" onclick="window.addTask('${phaseId}')">+ Aggiungi Lavoro</button>`;
@@ -495,7 +511,60 @@
             document.getElementById('bonus-base').innerText += " (Cap a 96k €)";
         }
         document.getElementById('bonus-recovery').innerText = recuperoIRPEF.toLocaleString('it-IT', { style: 'currency', currency: 'EUR' });
+        
+        // Reinizializza i plugin di Drag & Drop
+        window.initSortable();
     }
+
+    // --- SORTABLE DRAG & DROP ---
+    window.initSortable = function() {
+        const phasesContainer = document.getElementById('phases-container');
+        
+        if (window.phaseSortable) window.phaseSortable.destroy();
+        window.phaseSortable = new Sortable(phasesContainer, {
+            handle: '.phase-drag-handle',
+            animation: 150,
+            onStart: () => isDragging = true,
+            onEnd: function (evt) {
+                isDragging = false;
+                const updates = {};
+                Array.from(phasesContainer.querySelectorAll('.phase-card')).forEach((el, index) => {
+                    updates[`${el.getAttribute('data-id')}/order`] = index;
+                });
+                update(ref(db, `${DB_ROOT}/phases`), updates);
+            }
+        });
+
+        document.querySelectorAll('.tasks-list').forEach(list => {
+            new Sortable(list, {
+                group: 'shared-tasks', // Permette di spostare task tra Fasi diverse
+                handle: '.task-drag-handle',
+                animation: 150,
+                onStart: () => isDragging = true,
+                onEnd: function (evt) {
+                    isDragging = false;
+                    const updates = {};
+                    
+                    // Lista di destinazione
+                    const newPhaseId = evt.to.closest('.phase-card').getAttribute('data-id');
+                    Array.from(evt.to.querySelectorAll('.task')).forEach((el, index) => {
+                        const tid = el.getAttribute('data-id');
+                        updates[`${tid}/order`] = index;
+                        updates[`${tid}/phaseId`] = newPhaseId;
+                    });
+
+                    // Lista di origine (se diversa)
+                    if (evt.from !== evt.to) {
+                        Array.from(evt.from.querySelectorAll('.task')).forEach((el, index) => {
+                            updates[`${el.getAttribute('data-id')}/order`] = index;
+                        });
+                    }
+                    
+                    update(ref(db, `${DB_ROOT}/tasks`), updates);
+                }
+            });
+        });
+    };
 
     window.togglePhaseCollapse = (id) => {
         if (collapsedPhases.has(id)) collapsedPhases.delete(id);
@@ -575,6 +644,14 @@
 
         if (!title) return alert("Inserisci un titolo per il lavoro!");
         const taskData = { phaseId, title, price, status, isBonus, link, procedure };
+        
+        // Se è nuovo, lo mettiamo in fondo alla lista
+        if (!id) {
+            taskData.order = Object.values(globalData.tasks).filter(t => t.phaseId === phaseId).length;
+        } else {
+            taskData.order = globalData.tasks[id].order || 0;
+        }
+
         taskData.checked = (status === 'done');
 
         if (id) {
