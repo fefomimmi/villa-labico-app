@@ -58,19 +58,22 @@
     .budget-box { background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); padding: 10px; border-radius: 8px; flex: 1; min-width: 100px; position: relative; border: 1px solid rgba(255,255,255,0.15);}
     .budget-box span { display: block; font-size: 11px; text-transform: uppercase; opacity: 0.8; margin-bottom: 3px;}
     .budget-box strong { font-size: 16px; }
-    .budget-box.clickable { cursor: pointer; transition: background 0.2s; }
+    .budget-box.clickable { cursor: pointer; transition: background 0.2s; border: 1px dashed var(--secondary); }
     .budget-box.clickable:hover { background: rgba(255,255,255,0.2); }
     .budget-input { width: 90%; background: transparent; border: 1px dashed rgba(255,255,255,0.5); color: white; font-size: 16px; font-weight: bold; text-align: center; border-radius: 4px; padding: 2px;}
     .budget-input:focus { outline: none; border: 1px solid white; background: rgba(255,255,255,0.2);}
-    .box-totale strong { color: #f39c12; }
+    .box-totale strong { color: #38bdf8; }
     .box-speso strong { color: #ff6b6b; }
     .box-rimanente strong { color: #2ecc71; }
 
-    .analytics-panel { max-width: 800px; margin: 10px auto 0; background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.2); border-radius: 10px; padding: 15px; display: none; animation: fadeIn 0.3s ease-in-out; }
+    .analytics-panel { max-width: 800px; margin: 10px auto 0; background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.2); border-radius: 10px; padding: 15px; display: none; animation: fadeIn 0.3s ease-in-out; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
-    .filter-section { display: flex; justify-content: center; gap: 15px; padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.15); flex-wrap: wrap; }
-    .filter-checkbox { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; cursor: pointer; background: rgba(255,255,255,0.1); padding: 4px 10px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); }
+    
+    .filter-section { display: flex; justify-content: center; gap: 10px; padding-bottom: 15px; margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.15); flex-wrap: wrap; }
+    .filter-checkbox { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; cursor: pointer; background: rgba(255,255,255,0.1); padding: 6px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2); transition: 0.2s; }
+    .filter-checkbox:hover { background: rgba(255,255,255,0.2); }
     .filter-checkbox input { cursor: pointer; }
+    
     .analytics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; font-size: 12px; text-align: center; }
     .analytics-item { background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); }
     .analytics-item span { display: block; font-size: 10px; opacity: 0.8; text-transform: uppercase; margin-bottom: 2px;}
@@ -114,9 +117,6 @@
     .badge-status.doing { background: #bae6fd; color: #0369a1; }
     .badge-status.waiting { background: #fef08a; color: #854d0e; }
     .badge-status.done { background: #dcfce7; color: #15803d; }
-    .badge-priority.alta { background: #fee2e2; color: #b91c1c; }
-    .badge-priority.media { background: #ffedd5; color: #c2410c; }
-    .badge-priority.bassa { background: #f1f5f9; color: #64748b; }
     .badge-bonus { background: #e0e7ff; color: #3730a3; }
 
     .btn-link { display: inline-flex; align-items: center; background-color: var(--secondary); color: white; text-decoration: none; padding: 4px 8px; border-radius: 4px; font-size: 12px; margin-top: 6px; }
@@ -186,7 +186,7 @@
                 <span>Budget Totale</span>
                 <input type="number" id="master-budget" class="budget-input" value="0" onblur="window.saveBudget(this.value)">
             </div>
-            <div class="budget-box box-totale clickable" onclick="window.toggleAnalytics()" title="Clicca per aprire i filtri di simulazione">
+            <div class="budget-box box-totale clickable" onclick="window.toggleAnalytics()" title="Filtra le Fasi di Lavoro">
                 <span>Filtra Preventivo ▾</span>
                 <strong id="b-totale-lavori">0 €</strong>
             </div>
@@ -195,15 +195,13 @@
         </div>
 
         <div class="analytics-panel" id="analytics-panel">
-            <div class="filter-section">
-                <label class="filter-checkbox"><input type="checkbox" id="filter-alta" checked onchange="window.renderApp()"> 🔴 Alta Priorità</label>
-                <label class="filter-checkbox"><input type="checkbox" id="filter-media" checked onchange="window.renderApp()"> 🟡 Media Priorità</label>
-                <label class="filter-checkbox"><input type="checkbox" id="filter-bassa" checked onchange="window.renderApp()"> 🟢 Bassa Priorità</label>
-            </div>
+            <!-- Qui verranno iniettati i filtri dinamici per Fase -->
+            <div class="filter-section" id="phase-filters"></div>
+            
             <div class="analytics-grid">
-                <div class="analytics-item"><span>Totale Lavori Selezionati</span><strong id="subtotal-selected" class="text-info">0 €</strong></div>
+                <div class="analytics-item"><span>Costo Fasi Selezionate</span><strong id="subtotal-selected" class="text-info">0 €</strong></div>
                 <div class="analytics-item"><span id="label-diff">Residuo / Prestito</span><strong id="diff-selected">0 €</strong></div>
-                <div class="analytics-item"><span>🏛️ Base Bonus (Max 96k)</span><strong id="bonus-base">0 €</strong></div>
+                <div class="analytics-item"><span>🏛️ Base Bonus Edilizio</span><strong id="bonus-base">0 €</strong></div>
                 <div class="analytics-item"><span>💸 Recupero IRPEF 50%</span><strong id="bonus-recovery" class="text-success">0 €</strong></div>
             </div>
         </div>
@@ -243,14 +241,6 @@
                 <option value="doing">⏳ In Corso</option>
                 <option value="waiting">🟡 In Attesa</option>
                 <option value="done">✅ Completato</option>
-            </select>
-        </div>
-        <div class="form-group">
-            <label>Priorità</label>
-            <select id="task-priority-input">
-                <option value="bassa">🟢 Bassa</option>
-                <option value="media" selected>🟡 Media</option>
-                <option value="alta">🔴 Alta</option>
             </select>
         </div>
         <div class="form-group">
@@ -295,13 +285,12 @@
     const auth = getAuth(app);
     const db = getDatabase(app);
     const googleProvider = new GoogleAuthProvider();
-    
-    // Manteniamo lo stesso nodo così non perdi nessun dato appena inserito
     const DB_ROOT = 'villa_labico_gestionale_v4'; 
 
     let globalData = { budget: 106000, phases: {}, tasks: {} };
     let dbRef = null;
     let collapsedPhases = new Set(); 
+    let hiddenPhasesFilter = new Set(); // Nuovo stato per le fasi nascoste nel simulatore
 
     const savedTheme = localStorage.getItem('theme') || 'light';
     document.body.setAttribute('data-theme', savedTheme);
@@ -360,14 +349,12 @@
 
     window.renderApp = function() {
         const container = document.getElementById('phases-container');
-        container.innerHTML = '';
+        const filterContainer = document.getElementById('phase-filters');
         
-        const showAlta = document.getElementById('filter-alta').checked;
-        const showMedia = document.getElementById('filter-media').checked;
-        const showBassa = document.getElementById('filter-bassa').checked;
-
+        container.innerHTML = '';
+        filterContainer.innerHTML = '';
+        
         let totaleSpesoGlobale = 0;
-        let totaleComplessivoTutto = 0;
         let totaleLavoriSelezionati = 0;
         let spesaBonusSelezionata = 0;
         
@@ -382,18 +369,35 @@
         const sortedPhases = Object.entries(globalData.phases).sort((a,b) => a[1].order - b[1].order);
 
         sortedPhases.forEach(([phaseId, phaseData]) => {
+            // Costruzione Filtri Dinamici per Fase
+            const isPhaseHidden = hiddenPhasesFilter.has(phaseId);
+            const label = document.createElement('label');
+            label.className = 'filter-checkbox';
+            label.innerHTML = `<input type="checkbox" value="${phaseId}" ${!isPhaseHidden ? 'checked' : ''}> ${phaseData.title.split(' ')[0]} ${phaseData.title.split(' ')[1] || ''}`;
+            label.querySelector('input').addEventListener('change', (e) => {
+                if(e.target.checked) hiddenPhasesFilter.delete(phaseId);
+                else hiddenPhasesFilter.add(phaseId);
+                window.renderApp();
+            });
+            filterContainer.appendChild(label);
+
+            // Calcolo Costi Base per il badge
+            let phaseTotalCost = 0;
+            Object.entries(globalData.tasks).forEach(([taskId, task]) => {
+                if (task.phaseId === phaseId) {
+                    phaseTotalCost += (parseFloat(task.price) || 0);
+                    if(task.checked || task.status === 'done') totaleSpesoGlobale += (parseFloat(task.price) || 0);
+                }
+            });
+
+            // Se la fase è stata "spenta" dal filtro, passiamo alla prossima (scompare e non si somma)
+            if (isPhaseHidden) return;
+
             const isCollapsed = collapsedPhases.has(phaseId);
             const toggleIcon = isCollapsed ? '▶' : '▼';
 
             const phaseDiv = document.createElement('div');
             phaseDiv.className = 'phase-card';
-            let phaseTotalCost = 0;
-            
-            Object.entries(globalData.tasks).forEach(([taskId, task]) => {
-                if (task.phaseId === phaseId) {
-                    phaseTotalCost += (parseFloat(task.price) || 0);
-                }
-            });
 
             const phaseTotalBadgeHtml = phaseTotalCost > 0 
                 ? `<span class="phase-total-badge">${phaseTotalCost.toLocaleString('it-IT', {style:'currency', currency:'EUR'})}</span>` 
@@ -417,57 +421,44 @@
             Object.entries(globalData.tasks).forEach(([taskId, task]) => {
                 if (task.phaseId === phaseId) {
                     const taskPrice = parseFloat(task.price) || 0;
-                    totaleComplessivoTutto += taskPrice;
+                    totaleLavoriSelezionati += taskPrice;
+                    if (task.isBonus) spesaBonusSelezionata += taskPrice;
 
                     const isDone = task.checked || task.status === 'done';
-                    if(isDone) totaleSpesoGlobale += taskPrice;
+                    const priceHtml = task.price > 0 ? `<span class="task-price">${taskPrice.toLocaleString('it-IT', {style:'currency', currency:'EUR'})}</span>` : '';
+                    const linkHtml = task.link ? `<a href="${task.link}" target="_blank" class="btn-link">🔗 Apri Link</a>` : '';
+                    const procHtml = task.procedure ? `<details><summary>📖 Procedura / Note</summary><div class="guide-text">${task.procedure}</div></details>` : '';
+                    
+                    const statusVal = isDone ? 'done' : (task.status || 'todo');
+                    let statusLabel = 'Da Iniziare';
+                    if(statusVal === 'doing') statusLabel = 'In Corso';
+                    else if(statusVal === 'waiting') statusLabel = 'In Attesa';
+                    else if(statusVal === 'done') statusLabel = 'Completato';
+                    
+                    const statusBadge = `<span class="badge badge-status ${statusVal}">${statusLabel}</span>`;
+                    const bonusBadge = task.isBonus ? `<span class="badge badge-bonus">🏛️ Bonus 50%</span>` : '';
 
-                    const prio = task.priority || 'media';
-                    const isVisible = (prio === 'alta' && showAlta) || 
-                                      (prio === 'media' && showMedia) || 
-                                      (prio === 'bassa' && showBassa);
-
-                    if (isVisible) {
-                        totaleLavoriSelezionati += taskPrice;
-                        if (task.isBonus) spesaBonusSelezionata += taskPrice;
-
-                        const priceHtml = task.price > 0 ? `<span class="task-price">${taskPrice.toLocaleString('it-IT', {style:'currency', currency:'EUR'})}</span>` : '';
-                        const linkHtml = task.link ? `<a href="${task.link}" target="_blank" class="btn-link">🔗 Apri Link</a>` : '';
-                        const procHtml = task.procedure ? `<details><summary>📖 Procedura / Note</summary><div class="guide-text">${task.procedure}</div></details>` : '';
-                        
-                        const statusVal = isDone ? 'done' : (task.status || 'todo');
-                        let statusLabel = 'Da Iniziare';
-                        if(statusVal === 'doing') statusLabel = 'In Corso';
-                        else if(statusVal === 'waiting') statusLabel = 'In Attesa';
-                        else if(statusVal === 'done') statusLabel = 'Completato';
-                        
-                        const statusBadge = `<span class="badge badge-status ${statusVal}">${statusLabel}</span>`;
-                        const priorityBadge = `<span class="badge badge-priority ${prio}">${prio}</span>`;
-                        const bonusBadge = task.isBonus ? `<span class="badge badge-bonus">🏛️ Bonus 50%</span>` : '';
-
-                        html += `
-                            <div class="task ${isDone ? 'completed' : ''}">
-                                <input type="checkbox" class="task-checkbox" ${isDone ? 'checked' : ''} onchange="window.toggleTask('${taskId}', this.checked)">
-                                <div class="task-content">
-                                    <div class="task-top">
-                                        <div class="task-title task-text">
-                                            ${task.title} 
-                                            ${priceHtml}
-                                            ${statusBadge}
-                                            ${priorityBadge}
-                                            ${bonusBadge}
-                                        </div>
-                                        <div class="task-actions">
-                                            <button onclick="window.editTask('${taskId}')">✏️</button>
-                                            <button onclick="window.deleteTask('${taskId}')">🗑️</button>
-                                        </div>
+                    html += `
+                        <div class="task ${isDone ? 'completed' : ''}">
+                            <input type="checkbox" class="task-checkbox" ${isDone ? 'checked' : ''} onchange="window.toggleTask('${taskId}', this.checked)">
+                            <div class="task-content">
+                                <div class="task-top">
+                                    <div class="task-title task-text">
+                                        ${task.title} 
+                                        ${priceHtml}
+                                        ${statusBadge}
+                                        ${bonusBadge}
                                     </div>
-                                    ${linkHtml}
-                                    ${procHtml}
+                                    <div class="task-actions">
+                                        <button onclick="window.editTask('${taskId}')">✏️</button>
+                                        <button onclick="window.deleteTask('${taskId}')">🗑️</button>
+                                    </div>
                                 </div>
+                                ${linkHtml}
+                                ${procHtml}
                             </div>
-                        `;
-                    }
+                        </div>
+                    `;
                 }
             });
 
@@ -508,19 +499,14 @@
         document.getElementById('bonus-recovery').innerText = recuperoIRPEF.toLocaleString('it-IT', { style: 'currency', currency: 'EUR' });
     }
 
-    // ACCORDION LOGIC
     window.togglePhaseCollapse = (id) => {
-        if (collapsedPhases.has(id)) {
-            collapsedPhases.delete(id);
-        } else {
-            collapsedPhases.add(id);
-        }
+        if (collapsedPhases.has(id)) collapsedPhases.delete(id);
+        else collapsedPhases.add(id);
         window.renderApp();
     };
     window.expandAll = () => { collapsedPhases.clear(); window.renderApp(); };
     window.collapseAll = () => { Object.keys(globalData.phases).forEach(pid => collapsedPhases.add(pid)); window.renderApp(); };
 
-    // GLOBALS
     window.saveBudget = (val) => { set(ref(db, `${DB_ROOT}/budget`), parseFloat(val) || 0); };
     window.addPhase = () => {
         const title = prompt("Inserisci il nome della nuova Fase:");
@@ -538,6 +524,7 @@
             });
         }
     };
+    
     window.toggleTask = (id, isChecked) => { 
         const task = globalData.tasks[id];
         if(!task) return;
@@ -545,11 +532,11 @@
         set(ref(db, `${DB_ROOT}/tasks/${id}/checked`), isChecked); 
         set(ref(db, `${DB_ROOT}/tasks/${id}/status`), newStatus); 
     };
+
     window.deleteTask = (id) => {
         if (confirm("Vuoi davvero eliminare questo lavoro?")) remove(ref(db, `${DB_ROOT}/tasks/${id}`));
     };
 
-    // MODAL
     const modal = document.getElementById('task-modal');
     window.addTask = (phaseId) => {
         document.getElementById('modal-title').innerText = "Nuovo Lavoro";
@@ -558,7 +545,6 @@
         document.getElementById('task-title-input').value = "";
         document.getElementById('task-price-input').value = "";
         document.getElementById('task-status-input').value = "todo";
-        document.getElementById('task-priority-input').value = "media";
         document.getElementById('task-bonus-input').checked = false;
         document.getElementById('task-link-input').value = "";
         document.getElementById('task-procedure-input').value = "";
@@ -573,7 +559,6 @@
         document.getElementById('task-title-input').value = task.title;
         document.getElementById('task-price-input').value = task.price || "";
         document.getElementById('task-status-input').value = task.status || (task.checked ? 'done' : 'todo');
-        document.getElementById('task-priority-input').value = task.priority || "media";
         document.getElementById('task-bonus-input').checked = task.isBonus || false;
         document.getElementById('task-link-input').value = task.link || "";
         document.getElementById('task-procedure-input').value = task.procedure || "";
@@ -586,13 +571,12 @@
         const title = document.getElementById('task-title-input').value.trim();
         const price = parseFloat(document.getElementById('task-price-input').value) || 0;
         const status = document.getElementById('task-status-input').value;
-        const priority = document.getElementById('task-priority-input').value;
         const isBonus = document.getElementById('task-bonus-input').checked;
         const link = document.getElementById('task-link-input').value.trim();
         const procedure = document.getElementById('task-procedure-input').value.trim();
 
         if (!title) return alert("Inserisci un titolo per il lavoro!");
-        const taskData = { phaseId, title, price, status, priority, isBonus, link, procedure };
+        const taskData = { phaseId, title, price, status, isBonus, link, procedure };
         taskData.checked = (status === 'done');
 
         if (id) {
