@@ -125,6 +125,7 @@
     
     .badge { padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 700; text-transform: uppercase; white-space: nowrap; }
     .badge-status.todo { background: #e2e8f0; color: #475569; }
+    .badge-status.to_buy { background: #fce7f3; color: #be185d; }
     .badge-status.doing { background: #bae6fd; color: #0369a1; }
     .badge-status.waiting { background: #fef08a; color: #854d0e; }
     .badge-status.done { background: #dcfce7; color: #15803d; }
@@ -236,7 +237,7 @@
         <input type="hidden" id="task-phase-id">
         
         <div class="form-group">
-            <label>Titolo del Lavoro *</label>
+            <label>Titolo del Lavoro / Prodotto *</label>
             <input type="text" id="task-title-input" placeholder="Es. Acquisto Router">
         </div>
         <div class="form-group">
@@ -247,6 +248,7 @@
             <label>Stato del Lavoro</label>
             <select id="task-status-input">
                 <option value="todo">📌 Da Iniziare</option>
+                <option value="to_buy">🛒 Da Acquistare</option>
                 <option value="doing">⏳ In Corso</option>
                 <option value="waiting">🟡 In Attesa</option>
                 <option value="done">✅ Completato</option>
@@ -269,7 +271,7 @@
         
         <div class="modal-actions">
             <button class="btn-cancel" onclick="window.closeModal()">Annulla</button>
-            <button class="btn-save" onclick="window.saveTask()">Salva Lavoro</button>
+            <button class="btn-save" onclick="window.saveTask()">Salva</button>
         </div>
     </div>
 </div>
@@ -300,7 +302,7 @@
     let dbRef = null;
     let collapsedPhases = new Set(); 
     let hiddenPhasesFilter = new Set(); 
-    let isDragging = false; // Flag per evitare render durante il trascinamento
+    let isDragging = false; 
 
     const savedTheme = localStorage.getItem('theme') || 'light';
     document.body.setAttribute('data-theme', savedTheme);
@@ -342,7 +344,7 @@
         
         dbRef = ref(db, DB_ROOT);
         onValue(dbRef, (snapshot) => {
-            if (isDragging) return; // Non aggiornare il DOM se l'utente sta trascinando elementi
+            if (isDragging) return; 
             
             globalData = snapshot.val() || { budget: 106000, phases: {}, tasks: {} };
             if(!globalData.phases) globalData.phases = {};
@@ -445,7 +447,8 @@
                 
                 const statusVal = isDone ? 'done' : (task.status || 'todo');
                 let statusLabel = 'Da Iniziare';
-                if(statusVal === 'doing') statusLabel = 'In Corso';
+                if(statusVal === 'to_buy') statusLabel = 'Da Acquistare';
+                else if(statusVal === 'doing') statusLabel = 'In Corso';
                 else if(statusVal === 'waiting') statusLabel = 'In Attesa';
                 else if(statusVal === 'done') statusLabel = 'Completato';
                 
@@ -512,11 +515,9 @@
         }
         document.getElementById('bonus-recovery').innerText = recuperoIRPEF.toLocaleString('it-IT', { style: 'currency', currency: 'EUR' });
         
-        // Reinizializza i plugin di Drag & Drop
         window.initSortable();
     }
 
-    // --- SORTABLE DRAG & DROP ---
     window.initSortable = function() {
         const phasesContainer = document.getElementById('phases-container');
         
@@ -537,7 +538,7 @@
 
         document.querySelectorAll('.tasks-list').forEach(list => {
             new Sortable(list, {
-                group: 'shared-tasks', // Permette di spostare task tra Fasi diverse
+                group: 'shared-tasks', 
                 handle: '.task-drag-handle',
                 animation: 150,
                 onStart: () => isDragging = true,
@@ -545,7 +546,6 @@
                     isDragging = false;
                     const updates = {};
                     
-                    // Lista di destinazione
                     const newPhaseId = evt.to.closest('.phase-card').getAttribute('data-id');
                     Array.from(evt.to.querySelectorAll('.task')).forEach((el, index) => {
                         const tid = el.getAttribute('data-id');
@@ -553,7 +553,6 @@
                         updates[`${tid}/phaseId`] = newPhaseId;
                     });
 
-                    // Lista di origine (se diversa)
                     if (evt.from !== evt.to) {
                         Array.from(evt.from.querySelectorAll('.task')).forEach((el, index) => {
                             updates[`${el.getAttribute('data-id')}/order`] = index;
@@ -593,11 +592,12 @@
     };
     
     window.toggleTask = (id, isChecked) => { 
-        const task = globalData.tasks[id];
-        if(!task) return;
-        const newStatus = isChecked ? 'done' : 'todo';
         set(ref(db, `${DB_ROOT}/tasks/${id}/checked`), isChecked); 
-        set(ref(db, `${DB_ROOT}/tasks/${id}/status`), newStatus); 
+        if (isChecked) {
+            set(ref(db, `${DB_ROOT}/tasks/${id}/status`), 'done');
+        } else {
+            set(ref(db, `${DB_ROOT}/tasks/${id}/status`), 'todo');
+        }
     };
 
     window.deleteTask = (id) => {
@@ -606,7 +606,7 @@
 
     const modal = document.getElementById('task-modal');
     window.addTask = (phaseId) => {
-        document.getElementById('modal-title').innerText = "Nuovo Lavoro";
+        document.getElementById('modal-title').innerText = "Nuovo Lavoro / Prodotto";
         document.getElementById('task-id').value = "";
         document.getElementById('task-phase-id').value = phaseId;
         document.getElementById('task-title-input').value = "";
@@ -620,7 +620,7 @@
     window.editTask = (taskId) => {
         const task = globalData.tasks[taskId];
         if(!task) return;
-        document.getElementById('modal-title').innerText = "Modifica Lavoro";
+        document.getElementById('modal-title').innerText = "Modifica Lavoro / Prodotto";
         document.getElementById('task-id').value = taskId;
         document.getElementById('task-phase-id').value = task.phaseId;
         document.getElementById('task-title-input').value = task.title;
@@ -642,10 +642,9 @@
         const link = document.getElementById('task-link-input').value.trim();
         const procedure = document.getElementById('task-procedure-input').value.trim();
 
-        if (!title) return alert("Inserisci un titolo per il lavoro!");
+        if (!title) return alert("Inserisci un titolo per il lavoro o il prodotto!");
         const taskData = { phaseId, title, price, status, isBonus, link, procedure };
         
-        // Se è nuovo, lo mettiamo in fondo alla lista
         if (!id) {
             taskData.order = Object.values(globalData.tasks).filter(t => t.phaseId === phaseId).length;
         } else {
